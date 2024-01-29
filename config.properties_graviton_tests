@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # This file contains all customizable configuration items for the project
-# core version to be used at re:Invent 23 builder sessions
+# It is pre-configured for re:Invent 2023 builder session for the following basic settings:
+# using locally built and uploaded Model container images for Graviton and publicly shared Test container images
+# replace the original config.properties file with this version to run Tests on c5.4xlarge nodes
 
 ######################################################################
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. #
@@ -29,9 +31,9 @@ region=us-west-2
 
 # Container settings
 # Default is the private ECR registry in the current AWS account.
-# If registry is set, include the registry uri up to the image name, end the registry setting with /
-# registry setting for locally built images uploaded to local ECR
-registry=${account}.dkr.ecr.${region}.amazonaws.com/
+# If registry is set, include the registry uri up to the image name,
+# end the registry setting with /
+# registry=${account}.dkr.ecr.${region}.amazonaws.com/
 # registry_type=ecr
 registry_type=ecr
 base_image_name=aws-do-inference-base
@@ -39,11 +41,10 @@ base_image_tag=:v10-${processor}
 model_image_name=${huggingface_model_name}
 model_image_tag=:v10-${processor}
 
-# if using pre-built public ECR registry Model image (may require authentication) use the following settings
-
-#registry=public.ecr.aws/a2u7h5w3/
-#model_image_name=bert-base-workshop
-#model_image_tag=:v10-${processor}
+# if using pre-built public registry image (may require authentication) use the following settings
+registry=public.ecr.aws/a2u7h5w3/
+# model_image_name=bert-base-workshop
+# model_image_tag=:v10-${processor}
 
 # Trace settings
 # trace_opts_$processor is a processor-specific setting used by the docker run command in the trace.sh script
@@ -82,11 +83,12 @@ namespace=mpi
 app_name=${huggingface_model_name}-${processor}
 app_dir=app-${app_name}-${instance_type}
 
-# Test image settings - locally built images
+# Test image settings
 #test_image_name=test-${huggingface_model_name}
 #test_image_tag=:v10-cpu
 
 #when using pre-built test image available in public ECR registry (may require authentication): 
+#registry=public.ecr.aws/a2u7h5w3/
 test_image_name=bert-base-workshop
 test_image_tag=:test-v10-cpu
 
@@ -95,7 +97,7 @@ request_frequency=0.01
 # Stop random request test after num_requests number of requests
 num_requests=30
 # Number of test containers to launch (default=1), use > 1 for scale testing
-num_test_containers=5
+num_test_containers=10
 # test_instance_type - when runtime is kubernetes, node instance type on which test pods will run
 test_instance_type=c5.4xlarge
 # test_namespace - when runtime is kubernetes, namespace where test pods will be created

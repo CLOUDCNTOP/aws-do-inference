@@ -19,12 +19,12 @@ print_help() {
 if [ "$1" == "" ]; then 
 	source ./config.properties
 	echo ""
-	echo "Tracing model $huggingface_model_name ..."
+	echo "Tracing model: $huggingface_model_name ..."
 	
 	dockerfile=./1-build/Dockerfile-base-${processor}
 	echo ""
 	if [ -f $dockerfile ]; then
-		echo "   ... for processor $processor ..."
+		echo "   ... for processor: $processor ..."
 		trace_opts=trace_opts_${processor}
 		docker run ${!trace_opts} -it --rm -v $(pwd)/2-trace:/app/trace -v $(pwd)/config.properties:/app/config.properties ${registry}${base_image_name}${base_image_tag} bash -c "cd /app/trace; python model-tracer.py"
 	else

@@ -57,9 +57,11 @@ spec:
         - name: pod-port
           containerPort: 8080
         resources:
+        #use limits and requests to ensure that certain number of model pods get scheduled per node
           limits:
-            cpu: "8"
+            #Total node memory resource is about 32 GB for c7g.4xlarge and similar instances, adjust for other node types
+            memory: "27000Mi"
           requests:
-            cpu: "7"
-            memory: "11000Mi"
+            #Total node memory resource is about 32 GB for c7g.4xlarge and similar instances, adjust for other node types
+            memory: "27000Mi"
 
