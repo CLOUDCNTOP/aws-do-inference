@@ -6,8 +6,7 @@ enables hybrid deployments where the best processor/accelerator is used to serve
 In this sample repository, we use a [bert-base](https://huggingface.co/distilbert-base-multilingual-cased) NLP model from [huggingface.co](https://huggingface.co/), however the project structure and workflow is generic and can be adapted for use with other models.
 
 <div align="center">
-<!--img src="./aws-do-inference.png" width="90%"-->
-<img src="./low-latency-high-throughput-inference-on-amazon-eks.png" width="90%">  
+<img src="./low-latency-high-bandwidth-updated-architecture.jpg" width="90%">  
 <br/>
 Fig. 1 - Sample Amazon EKS cluster infrastructure for deploying, running and testing ML Inference workloads
 </div>
@@ -15,21 +14,19 @@ Fig. 1 - Sample Amazon EKS cluster infrastructure for deploying, running and tes
 
 The ML inference workloads in this sample project are deployed on the CPU, GPU, or Inferentia nodes as shown on Fig. 1. The control scripts run in any location that has access to the cluster API. To eliminate latency concern related to the cluster ingress, load tests run in a pod within the cluster and send requests to the models directly through the cluster pod network.
 <div align="left">
-1. The Amazon EKS cluster has several node groups, with one EC2 instance family per node group. Each node group can support different instance types, such as CPU (c5,c6i, c7g), GPU (g4dn), AWS Inferentia (Inf2)
+1. The Amazon EKS cluster has several node groups, with one EC2 instance family per node group. Each node group can support different instance types, such as CPU (c5,c6i,c7g), GPU (g4dn), AWS Inferentia (Inf2)
 and can pack multiple models per EKS node to maximize the number of served ML models that are running in a node group. 
 Model bin packing is used to maximize compute and memory utilization of the compute node EC2 instances in the cluster node groups.
 <br/>  
-2. The natural language processing (NLP) open-source PyTorch model from [huggingface.co](https://huggingface.co/) serving application and ML framework dependencies are built by Users as container images
-using Automation framework uploaded to Amazon Elastic Container Registry - [Amazon ECR](https://aws.amazon.com/ecr/).
+2. The natural language processing (NLP) open-source PyTorch model from [huggingface.co](https://huggingface.co/) serving application and ML framework dependencies are built by Users as container images using Automation framework uploaded to Amazon Elastic Container Registry - [Amazon ECR](https://aws.amazon.com/ecr).
 <br/>
-3. Using project Automation framework, Model container images are obtained from ECR and deployed to [Amazon EKS cluster](https://aws.amazon.com/eks/) using generated Deployment and Service manifests via Kubernetes API
-exposed via Elastic Load Balancer (ELB). Model deployments are customized for each target EKS compute node instance type via settings in the central configuration file.
+3. Using project Automation framework, Model container images are obtained from Amazon ECR and deployed to [Amazon EKS cluster](https://aws.amazon.com/eks/) using generated Deployment and Service manifests via calls to Kubernetes API exposed via [Elastic Load Balancer](https://aws.amazon.com/elasticloadbalancing/) (ELB). Model deployments are customized for each target EKS compute node  processor architecture via settings in the central configuration file.
 <br/>
-4. Following best practices of separation of Model data from containers that run it, ML model microservice design allows to scale out to a large number of models. In the project, model containers are pulling data from
+4. Following best practices of separation of Model data from containers that run it, ML model microservice design allows to scale out to a large number of models. In this project, model containers are pulling model data from
 Amazon Simple Storage Service ([Amazon S3](https://aws.amazon.com)) and other public model data sources each time they are initialized. 
 <br/>
-5. Using project Automation framework, Test container images are obtained from ECR and deployed to Amazon EKS cluster using generated Deployment and Service manifests via Kubernetes API. 
-Test deployments are customized for each deployment target EKS compute node architecture via settings in the central configuration file. Load/scale testing is performed via sending simultaneous requests
+5. Using project Automation framework, Test container images are obtained from ECR registry and deployed to Amazon EKS cluster using generated Deployment and Service manifests via Kubernetes API. 
+Test deployments are customized for each deployment target EKS compute node processor architecture via settings in the central configuration file. Load/scale testing is performed via sending simultaneous requests
 to the Model service pool. Performance Test results metrics are obtained, recorded and aggregated.
 <br/>
 </div>
@@ -41,21 +38,24 @@ Fig. 2 - ML Inference video walkthrough
 </div>
 <br/>
 
-See an end-to-end accelerated [video walkthrough](https://bit.ly/aws-do-inference-video) (7 min) or follow the instructions below to build and run your own inference solution.
+Please watch this end-to-end accelerated [video walkthrough](https://bit.ly/aws-do-inference-video) (7 min) or follow the instructions below to build and run your own inference solution.
 
 ## Prerequisites
 This sample can be run on a single machine using Docker, or on a Amazon EKS cluster.
-To provision the needed infrastructure, just run the `./provision.sh` script.
-Optionally, you can use an [existing EKS cluster](https://github.com/aws-samples/aws-do-eks/blob/main/wd/conf/eksctl/yaml/eks-inference-workshop.yaml-template) that contains nodegroups of the desired target instance types.
-In addition it is assumed that the following basic tools are present: [docker](https://docs.docker.com/get-docker/), [kubectl](https://kubernetes.io/docs/tasks/tools/), [envsubst](https://command-not-found.com/envsubst), [kubetail](https://github.com/johanhaleby/kubetail), [bc](https://howtoinstall.co/en/bc).
+
+It is assumed that the following basic tools are present: [docker](https://docs.docker.com/get-docker/), [kubectl](https://kubernetes.io/docs/tasks/tools/), [envsubst](https://command-not-found.com/envsubst), [kubetail](https://github.com/johanhaleby/kubetail), [bc](https://howtoinstall.co/en/bc).
 
 ## Operation
+
 The project is operated through a set of action scripts as described below. To complete a full cycle from beginning-to-end, first configure the project, then follow steps 1 through 5 executing the corresponding action scripts. Each of the action scripts has a help screen, which can be invoked by passing "help" as argument: `<script>.sh help` 
+
 ### Optional - Provision an EKS cluster with 3 node groups
+To provision the needed EKS cluster infrastructure, just run the `./provision.sh` script.
+Optionally, you can use an [existing EKS cluster](https://github.com/aws-samples/aws-do-eks/blob/main/wd/conf/eksctl/yaml/eks-inference-workshop.yaml-template) that contains nodegroups of the desired target instance types.
 ```
 ./provision.sh
 ```
-This script will execute a script that creates a CloudFormation stack which deploys an EC2 "management" instance in the **us-west-2** region. That instance contains a *userData* script that provisions an EKS cluster in **us-west-2** region as well per specification based on the following [template](https://github.com/aws-samples/aws-do-eks/blob/main/wd/conf/eksctl/yaml/eks-inference-workshop.yaml-template) which is a part of another Git repo project. 
+This command will execute a script that creates a CloudFormation stack which deploys an EC2 "management" instance in your default AWS region. That instance contains a *userData* script that provisions an EKS cluster in **us-west-2** region as well per specification based on the following [template](https://github.com/aws-samples/aws-do-eks/blob/main/wd/conf/eksctl/yaml/eks-inference-workshop.yaml-template) which is a part of another Git repo project. 
 After that EKS cluster is provisoned, it is fully acessible from that EC2 "management" instance and this repository is copied there as well, ready to proceed to next steps.
 
 ### Configure
@@ -141,10 +141,26 @@ The test script helps run a number of tests against the model servers deployed i
 * `./test.sh run bma` - run benchmark analysis - aggregate and average stats from logs of all completed benchmark containers
 
 ## Clean up
-If you provisioned an EKS cluster when setting up your prerequisites for the project  as described in the **Optional - Provision an EKS Cluster** section above, you can clean up the cluster and all resources associated with it by running this script:
+
+You can uninstall the sample code for this Guidance using the AWS Command Line Interface. You must also delete the EKS cluster if it was deployed using references from this Guidance, since removal of the scale testing framework does not automatically delete Cluster and its resources.
+
+To stop or uninstall scale Inferencetest job(s), run the following command:
+```shell
+./test.sh stop
+```
+It should delete all scale test pods and jobs from the specified EKS K8s namespace.
+
+To stop or uninstall Inference model services, run the following command:
+```shell
+./deploy.sh stop
+```
+It should delete all Model deployments, pods, and services from the specified EKS K8s namespace.
+
+If you provisioned an EKS cluster when setting up your prerequisites for the project  as described in the "Optional - Provision an EKS cluster with 3 node groups" above, you can clean up the cluster and all resources associated with it by running this script:
 ```
 ./remove.sh
 ```
+It should delete EKS cluster compute node groups first, then IAM service account used in that cluster, then cluster itself and, finally, ManagementInstance EC2 instance via corresponding Cloud Formations. Sometimes you may need to run that command a few times as individual stack deletion commands may time out - that should not create any problem.
 
 ## Security
 
